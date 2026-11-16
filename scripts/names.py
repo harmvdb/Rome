@@ -35,6 +35,7 @@ RENAME = {
     "Chalet-Refuge du Ski Club Edelweiss Saint-Amarin": "Mordfeld (bij Le Markstein)",
     "USM Mordfeld": "Mordfeld (bij Le Markstein)",
     "Rome": "Rome (Sint-Pieter)",
+    ("s8a", "Montaione"): "Gambassi Terme",
 }
 
 # extra verplichte stopplaatsen per variant: ("Naam", (lat, lon))

@@ -143,7 +143,7 @@ export const SECTIONS = {
         text: [
           'Na Belfort steek je de Bourgondische Poort over en bereik je bij Saint-Hippolyte de Doubs. Drie dagen volg je de rivier door een diepe, beboste kloof op de grens met Zwitserland, langs Goumois en de Échelles de la Mort naar de waterval Saut du Doubs bij Villers-le-Lac.',
           'Daarna klim je naar de plateaus van de Haut-Doubs. Je passeert het Château de Joux en beklimt de Mont d\'Or (1463 m) met zijn steile kalkwand en het eerste grote Alpenpanorama.',
-          'Via Mouthe, bron van de Doubs, en de bossen van de Risoux bereik je Chapelle-des-Bois en Les Rousses. Bij La Cure ga je Zwitserland in. De laatste dag daal je met uitzicht op het meer en de Mont Blanc af naar Nyon.',
+          'Via Mouthe, bron van de Doubs, en de bossen van de Risoux bereik je Chapelle-des-Bois, Morez en Les Rousses. Bij La Cure ga je Zwitserland in. De laatste dag daal je met uitzicht op het meer en de Mont Blanc af naar Nyon.',
         ],
         plus: ['Rustig en dunbevolkt', 'Koel in de zomer', 'Spectaculaire aankomst boven het Meer van Genève'],
         minus: ['Beperkt aanbod van overnachtingen in de Doubskloof', 'Lange transfers naar de startpunten', 'Veel bos op de plateaus'],
