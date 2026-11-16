@@ -8,10 +8,20 @@ export async function geocode(text) {
   const r = await fetch(`${API}/geocode?text=${encodeURIComponent(text)}&language=nl`);
   if (!r.ok) throw new Error('Zoeken mislukt');
   const list = await r.json();
-  return list.filter((x) => x.lat && x.lon).slice(0, 6).map((x) => ({
-    name: x.name, ll: [x.lat, x.lon], type: x.type,
-    area: (x.areas || []).filter((a) => a.default || a.adminLevel === 2).map((a) => a.name).filter((n, i, arr) => arr.indexOf(n) === i).join(', '),
-  }));
+  const seen = new Set();
+  const out = [];
+  for (const x of list) {
+    if (!x.lat || !x.lon) continue;
+    const key = `${x.name}|${x.lat.toFixed(2)}|${x.lon.toFixed(2)}`;
+    if (seen.has(key)) continue;
+    seen.add(key);
+    const areas = x.areas || [];
+    const town = (areas.find((a) => a.default) || {}).name || '';
+    const country = (areas.find((a) => a.adminLevel === 2) || {}).name || x.country || '';
+    out.push({ name: x.name, ll: [x.lat, x.lon], stop: x.type === 'STOP',
+      area: [x.type === 'STOP' ? 'halte of station' : 'plaats', town !== x.name ? town : '', country].filter(Boolean).join(', ') });
+  }
+  return out.slice(0, 6);
 }
 
 // Zelfde weekdag binnen de komende weken, voor reizen die verder weg liggen dan de dienstregeling reikt.
