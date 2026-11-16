@@ -2,7 +2,7 @@
 
 # naam van verplichte stopplaatsen (pins uit corridor.py)
 PIN_NAMES = {
-    "idar": "Idar-Oberstein", "kusel": "Kusel", "kaiserslautern": "Kaiserslautern", "wissembourg": "Wissembourg", "perl": "Perl",
+    "idar": "Idar-Oberstein", "kusel": "Kusel", "lichtenberg": "Burg Lichtenberg", "hausach": "Hausach", "kaiserslautern": "Kaiserslautern", "wissembourg": "Wissembourg", "perl": "Perl",
     "lausanne": "Lausanne", "gsb": "Col du Grand-Saint-Bernard", "stgingolph": "Saint-Gingolph",
     "leshouches": "Les Houches", "courmayeur": "Courmayeur", "orsieres": "Orsières",
 }
@@ -35,6 +35,12 @@ RENAME = {
     "Chalet-Refuge du Ski Club Edelweiss Saint-Amarin": "Mordfeld (bij Le Markstein)",
     "USM Mordfeld": "Mordfeld (bij Le Markstein)",
     "Rome": "Rome (Sint-Pieter)",
+    "Seehotel Gelterswoog (bij Dansenberg)": "Gelterswoog (bij Kaiserslautern)",
+    "Schwarzbach (bij Mölschbach)": "Johanniskreuz",
+    "Hark (bij Oberharmersbach)": "Harkhof (bij Oberharmersbach)",
+    "Brendhäusle (bij Gütenbach)": "Brend (bij Gütenbach)",
+    "Schöne Aussicht (bij Niederwasser)": "Schöne Aussicht (bij Hornberg)",
+    ("s3b", 2): "Dahn",
     ("s8a", "Montaione"): "Gambassi Terme",
 }
 

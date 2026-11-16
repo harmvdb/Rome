@@ -53,6 +53,33 @@ class TrailGraph:
                 self.adj[best[1]][e] = best[0]
                 bridged += 1
         self.bridged = bridged
+        self.bridge_components()
+
+    def bridge_components(self, limit=400.0):
+        """Verbind losse delen van het pad als ze minder dan limit meter uit elkaar liggen (ontbrekende stukjes in OSM)."""
+        comp = {}
+        cid = 0
+        for n in self.nodes:
+            if n in comp:
+                continue
+            for m in self.component(n):
+                comp[m] = cid
+            cid += 1
+        if cid < 2:
+            return
+        best = {}
+        for n in self.nodes:
+            for m in self.near(n, 1):
+                if comp[m] == comp[n]:
+                    continue
+                d = wmt.hav(n, m)
+                k = (min(comp[n], comp[m]), max(comp[n], comp[m]))
+                if d < limit and (k not in best or d < best[k][0]):
+                    best[k] = (d, n, m)
+        for d, n, m in best.values():
+            self.adj[n][m] = d
+            self.adj[m][n] = d
+            self.bridged += 1
 
     def near(self, pt, rings):
         gx, gy = int(pt[0] * 200), int(pt[1] * 200)

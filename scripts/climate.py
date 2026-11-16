@@ -8,16 +8,18 @@ sys.path.insert(0, os.path.dirname(__file__))
 import wmt
 
 POINTS = {
-    "s1": ("Idar-Oberstein", 49.70, 7.30, 400), "s2": ("Col de la Schlucht", 48.06, 7.02, 1139),
-    "s3": ("Mouthe", 46.71, 6.19, 940), "s4": ("Col du Grand-Saint-Bernard", 45.869, 7.171, 2470),
-    "s4lake": ("Lausanne", 46.52, 6.63, 450), "s5": ("Aosta", 45.737, 7.32, 580), "s6": ("Pavia", 45.185, 9.16, 77),
-    "s7": ("Pontremoli", 44.375, 9.88, 240), "s8": ("Siena", 43.32, 11.33, 320), "s9": ("Viterbo", 42.42, 12.10, 330),
+    "s1": ("Idar-Oberstein", 49.70, 7.30, 400), "s2": ("Johanniskreuz", 49.34, 7.83, 470),
+    "s3": ("Dahn", 49.15, 7.78, 210), "s4": ("Rastatt", 48.86, 8.20, 120), "s5": ("Hornisgrinde", 48.61, 8.20, 1100),
 }
 out = {}
 for key, (name, lat, lon, ele) in POINTS.items():
     url = (f"https://archive-api.open-meteo.com/v1/archive?latitude={lat}&longitude={lon}&elevation={ele}"
            "&start_date=2016-01-01&end_date=2025-12-31&daily=temperature_2m_max,temperature_2m_min,precipitation_sum,snowfall_sum&timezone=UTC")
-    d = wmt.fetch_json(url, f"clim_{key}.json", pause=2)["daily"]
+    try:
+        d = wmt.fetch_json(url, f"clim2_{key}.json", pause=20, retries=2)["daily"]
+    except Exception as e:  # dienst beperkt het aantal verzoeken: sla dit punt over en draai later opnieuw
+        print(key, "overgeslagen:", str(e)[-60:])
+        continue
     m = {i: {"tx": [], "tn": [], "p": [], "s": [], "days": set()} for i in range(1, 13)}
     for t, tx, tn, p, s in zip(d["time"], d["temperature_2m_max"], d["temperature_2m_min"], d["precipitation_sum"], d["snowfall_sum"]):
         if tx is None:

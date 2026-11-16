@@ -249,7 +249,7 @@ def stop_cost(b):
 def edge_cost(line, a, b):
     km, up, dn, _, _ = line.stats(a["s"], b["s"])
     T = total_hours(km, up, dn)
-    c = ((T - T_IDEAL) / 1.4) ** 2
+    c = ((T - T_IDEAL) / (1.4 * T_IDEAL / 7.4)) ** 2
     if T < T_MIN:
         c += 1.0 + 3 * (T_MIN - T) ** 2
     if T > T_MAX:
@@ -306,6 +306,8 @@ def main():
             if only and v["id"] not in only:
                 continue
             line = Line(json.load(open(os.path.join(CACHE, f"line_{v['id']}.json"))))
+            global T_MIN, T_MAX, T_IDEAL
+            T_MIN, T_MAX, T_IDEAL = v.get("hours", (6.0, 9.0, 7.4))
             cands, items = candidates(line, pois, v["id"], v.get("reach2", 2200))
             nodes = [{"s": 0.0, "q": 9, "forced": True, "name": sec["from"], "lat": line.pts[0][0], "lon": line.pts[0][1]},
                      {"s": line.L, "q": 9, "forced": True, "name": sec["to"], "lat": line.pts[-1][0], "lon": line.pts[-1][1]}]
@@ -334,6 +336,8 @@ def main():
                     if not n.get("name"):
                         n["name"] = f"km {n['s'] / 1000:.0f}"
                     n["name"] = RENAME.get((v["id"], n["name"]), RENAME.get(n["name"], n["name"]))
+                if (v["id"], i + 1) in RENAME:
+                    b["name"] = RENAME[(v["id"], i + 1)]
                 km, up, dn, emin, emax = line.stats(a["s"], b["s"])
                 i0, i1 = line.point_at(a["s"]), line.point_at(b["s"])
                 seg = line.pts[i0:i1 + 1]

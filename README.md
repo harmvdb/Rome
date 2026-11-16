@@ -5,7 +5,7 @@ Planner voor een voettocht van Trier naar Rome over langeafstandspaden: de Saar-
 ## Wat de app doet
 
 - **Route**: negen secties met beschrijving, varianten, seizoensadvies per maand, klimaatgrafiek en ervaringen van andere wandelaars.
-- **Etappes**: 124 etappes op de hoofdroute (178 met alle varianten), ingedeeld op 6 tot 9 uur per dag inclusief pauzes. Elke etappe eindigt bij een overnachtingsadres.
+- **Etappes**: 31 etappes van Trier tot de splitsing bij de Titisee (563 km), ingedeeld op 6 tot 9 uur per dag inclusief pauzes. Elke etappe eindigt bij een overnachtingsadres.
 - **Reizen**: stel een reis van 5 tot 10 etappes samen. Per nacht kies je een adres, open je de boekingssite met je datums en houd je status en prijs bij.
 - **Openbaar vervoer**: reisadvies van huis naar het startpunt en terug, plus links naar de reisplanners.
 - **Garmin**: per etappe een GPX die je via het deelmenu naar Garmin Connect stuurt of downloadt.

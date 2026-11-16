@@ -69,7 +69,7 @@ export async function viewStage(root, id, rerender) {
       monthStrip(monthsFor(st), false),
       st.max >= 2000 ? h('p', null, `Deze etappe komt tot ${meters(st.max)}. Begaanbaar van begin juli tot half september. Daarbuiten ligt er sneeuw.`)
         : h('p', null, info.season || '')),
-    h('section', null, h('h2', null, `Overnachten in ${st.to}`), stayEl),
+    h('section', null, h('h2', null, 'Overnachten'), stayEl),
     h('section', null, h('h2', null, 'Onderweg'), alongEl),
     h('section', null,
       h('h2', null, 'Openbaar vervoer'),
@@ -115,7 +115,10 @@ export async function viewStage(root, id, rerender) {
   for (const p of sb.data.along) stayMarker(p).bindPopup(`<strong>${p.n}</strong><br>${(KIND[p.k] || {}).label || p.k}, na ${p.km} km`).addTo(layerStay);
   for (const p of sb.data.shops) L.circleMarker([p.lat, p.lon], { radius: 4, color: '#fff', weight: 1, fillColor: '#444', fillOpacity: 0.9 }).bindPopup(`${p.n} (winkel), na ${p.km} km`).addTo(layerStay);
   for (const p of sb.data.water) L.circleMarker([p.lat, p.lon], { radius: 3.5, color: '#fff', weight: 1, fillColor: '#2a8fd6', fillOpacity: 0.9 }).bindPopup(`Drinkwater, na ${p.km} km`).addTo(layerStay);
-  stayEl.replaceChildren(sb.el);
+  stayEl.replaceChildren(h('details', { class: 'help' },
+    h('summary', null, `Zoek overnachtingen in ${st.to}: ${sb.data.end.length} adressen en boekingslinks`),
+    h('p', { class: 'muted small' }, 'Deze lijst is een momentopname uit OpenStreetMap. Leg adressen pas vast als de reis dichtbij komt en ververs dan de lijst.'),
+    sb.el));
 
   alongEl.replaceChildren(
     h('p', null,

@@ -8,9 +8,7 @@ import { MONTHS } from './util.js';
 export function monthsFor(st) {
   const info = SECTIONS[st.section.id] || {};
   const v = (info.variants || {})[st.variant.id] || {};
-  let m = v.months || info.months || new Array(12).fill(2);
-  // Het meerdeel van de Alpensectie volgt het seizoen van het meer, niet dat van de passen.
-  if (st.section.id === 's4' && st.max < 1300) m = [0, 0, 1, 2, 3, 3, 2, 2, 3, 2, 1, 0];
+  const m = v.months || info.months || new Array(12).fill(2);
   return m;
 }
 

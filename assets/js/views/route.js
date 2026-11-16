@@ -4,11 +4,12 @@
 import { h, km, meters, hours, num, toast, download, MONTHS_LONG } from '../util.js';
 import { state, save, exportJSON, importJSON, resetAll, defaultPace } from '../store.js';
 import { route, chosen, totals, time, decode, section as getSection } from '../data.js';
-import { SECTIONS, RATING } from '../content.js';
+import { SECTIONS, RATING, NEXT } from '../content.js';
 import { makeMap, COLORS } from '../mapview.js';
 import { stageRow, monthStrip, monthLegend, climateChart, statGrid, variantStats, badge, extLink } from '../components.js';
 import { propose, bestMonthsText, monthsForStages } from '../plan.js';
 import { geocode } from '../ov.js';
+import { travelPanel } from './trips.js';
 import { newTripFrom } from './trips.js';
 
 let climate = null;
@@ -36,7 +37,8 @@ function drawRoute(map, opts = {}) {
   });
   if (!opts.only) {
     L.marker([49.7597, 6.644], { icon: L.divIcon({ className: '', html: '<span class="pin start">T</span>', iconSize: [24, 24], iconAnchor: [12, 12] }) }).addTo(map).bindTooltip('Trier');
-    L.marker([41.9022, 12.4567], { icon: L.divIcon({ className: '', html: '<span class="pin end">R</span>', iconSize: [24, 24], iconAnchor: [12, 12] }) }).addTo(map).bindTooltip('Rome');
+    const last = route.sections[route.sections.length - 1]; const le = chosen(last).stages.slice(-1)[0];
+    L.marker(le.b, { icon: L.divIcon({ className: '', html: '<span class="pin end">?</span>', iconSize: [24, 24], iconAnchor: [12, 12] }) }).addTo(map).bindTooltip(`${le.to}: hier kies je het vervolg`);
   }
   map.fitBounds(bounds, { padding: [18, 18] });
 }
@@ -68,17 +70,17 @@ export function viewRoute(root, rerender) {
   root.append(
     h('section', { class: 'hero' },
       h('div', { class: 'hero-text' },
-        h('p', { class: 'eyebrow' }, 'Te voet over de Alpen'),
-        h('h1', null, 'Van Trier naar Rome'),
-        h('p', { class: 'lead' }, `${km(t.total)} in ${t.all.length} etappes over de Saar-Hunsrück-Steig, de GR 5 door Vogezen en Jura, de Alpen en de Via Francigena.`),
+        h('p', { class: 'eyebrow' }, 'Te voet naar Rome · deel 1'),
+        h('h1', null, 'Van Trier naar de Titisee'),
+        h('p', { class: 'lead' }, `${km(t.total)} in ${t.all.length} etappes over de Saar-Hunsrück-Steig, door het Pfälzerwald en over de Westweg. Bij de Titisee splitst de weg naar Rome. Die keuze maak je later.`),
         h('div', { class: 'progress', role: 'progressbar', 'aria-valuenow': Math.round(pct), 'aria-valuemin': 0, 'aria-valuemax': 100 }, h('i', { style: { width: Math.max(pct, 0.8) + '%' } })),
         h('p', { class: 'progress-t' }, `${km(t.doneKm)} gelopen · ${km(t.total - t.doneKm)} te gaan · ${left} etappes · ongeveer ${Math.ceil(left / (state.settings.perTrip || 8))} reizen van ${state.settings.perTrip || 8} dagen`),
         next ? h('div', { class: 'cta' },
           h('a', { class: 'btn primary', href: '#/reizen' }, 'Plan je volgende reis'),
-          h('a', { class: 'btn', href: `#/etappe/${next.st.id}` }, `Volgende etappe: ${next.st.from} → ${next.st.to}`)) : h('p', { class: 'lead' }, 'Je bent in Rome. Gefeliciteerd.')),
+          h('a', { class: 'btn', href: `#/etappe/${next.st.id}` }, `Volgende etappe: ${next.st.from} → ${next.st.to}`)) : h('p', { class: 'lead' }, 'Je staat bij de Titisee. Tijd om het vervolg te kiezen.')),
       mapEl),
     h('section', null,
-      h('h2', null, 'De route in negen secties'),
+      h('h2', null, `De route in ${route.sections.length} secties`),
       h('p', { class: 'muted' }, 'Kies per sectie je variant. De etappelijst, de kaart en je reizen volgen die keuze.'),
       h('div', { class: 'sections' }, route.sections.map((sec, si) => {
         const v = chosen(sec);
@@ -97,12 +99,19 @@ export function viewRoute(root, rerender) {
           variantPicker(sec, rerender),
           h('p', { class: 'more' }, h('a', { href: `#/sectie/${sec.id}` }, 'Beschrijving, seizoen en etappes →')));
       }))),
+    h('section', null,
+      h('h2', null, 'Het vervolg na de Titisee'),
+      h('p', { class: 'muted' }, 'Tot hier lopen alle routes gelijk. Daarna kies je uit drie lijnen naar Rome. Zodra je kiest, komt dat deel in de app.'),
+      h('div', { class: 'sections' }, NEXT.options.map((o) => h('article', { class: 'card sec' },
+        h('header', null, h('span', { class: 'secn', style: { background: '#777' } }, o.key), h('div', null, h('h3', null, o.name))),
+        h('p', null, o.text)))),
+      h('p', { class: 'more' }, extLink('Lees het magazine met de drie routes', NEXT.magazine))),
     h('section', { class: 'note' },
       h('h2', null, 'Zo werkt deze planner'),
       h('ol', { class: 'steps' },
         h('li', null, h('strong', null, 'Route. '), 'Kies varianten en lees per sectie de beschrijving, het seizoensadvies en de ervaringen van andere wandelaars.'),
         h('li', null, h('strong', null, 'Reizen. '), 'Maak een reis van 5 tot 10 etappes. De planner zet de dagen, de nachten en de heen- en terugreis klaar.'),
-        h('li', null, h('strong', null, 'Overnachten. '), 'Kies per nacht een adres, open de boekingssite met je datums al ingevuld en houd bij wat geboekt is.'),
+        h('li', null, h('strong', null, 'Overnachten. '), 'Adressen leg je pas vast als een reis dichtbij komt. Bij elke etappe en elke nacht staat een zoekblok met actuele adressen en boekingslinks.'),
         h('li', null, h('strong', null, 'Garmin. '), 'Stuur per etappe de GPX naar Garmin Connect en zet hem als koers op je Forerunner 965.'))));
   requestAnimationFrame(() => { const map = makeMap(mapEl); drawRoute(map); });
 }
@@ -152,8 +161,14 @@ export async function viewSection(root, id, rerender) {
       h('ul', { class: 'links' }, vi.reviews.sources.map((s) => h('li', null, extLink(s.label, s.url))))) : null,
     h('section', null,
       h('h2', null, 'Praktisch'),
-      h('ul', null, (info.practical || []).map((x) => h('li', null, x))),
-      info.ov ? h('p', null, h('strong', null, 'Openbaar vervoer. '), info.ov) : null),
+      h('ul', null, (info.practical || []).map((x) => h('li', null, x)))),
+    h('section', null,
+      h('h2', null, 'Aan- en afreis'),
+      info.ov ? h('p', null, info.ov) : null,
+      h('p', null, h('strong', null, 'Stations aan de route: '), [v.stages[0].from].concat(v.stages.filter((st) => st.rail && st.rail.m < 2500).map((st) => `${st.to} (${st.rail.n})`)).join(', '), '.'),
+      h('div', { class: 'two' },
+        h('div', null, h('h3', null, `Heen naar ${sec.from}`), travelPanel({ name: state.settings.home, ll: state.settings.homeLL }, { name: sec.from, ll: v.stages[0].a }, null)),
+        h('div', null, h('h3', null, `Terug vanaf ${sec.to}`), travelPanel({ name: sec.to, ll: v.stages[v.stages.length - 1].b }, { name: state.settings.home, ll: state.settings.homeLL }, null, { time: '09:00' })))),
     h('section', null,
       h('div', { class: 'row-head' }, h('h2', null, `Etappes (${v.stages.length})`),
         h('button', { class: 'btn primary', onclick: () => newTripFrom(v.stages.find((st) => !state.done[st.id]) || v.stages[0]) }, 'Plan een reis in deze sectie')),
@@ -166,7 +181,6 @@ export async function viewSection(root, id, rerender) {
   try {
     const c = await getClimate();
     if (c[sec.id]) climBox.append(climateChart(c[sec.id]));
-    if (sec.id === 's4' && c.s4lake) climBox.append(climateChart(c.s4lake));
   } catch (e) { /* grafiek is aanvulling */ }
 }
 
@@ -195,7 +209,7 @@ export async function viewWhen(root, rerender) {
   root.append(
     h('header', { class: 'page-head' },
       h('h1', null, 'Wanneer loop je wat'),
-      h('p', { class: 'lead' }, 'De volgorde ligt vast, het seizoen niet. De Alpen kunnen alleen in de zomer, de Po-vlakte en Toscane juist niet. Plan je reizen daaromheen.')),
+      h('p', { class: 'lead' }, 'Dit deel loopt door middelgebergte en kan van half april tot eind oktober. Mei, juni en september zijn het best.')),
     h('section', null,
       h('h2', null, 'Seizoenskalender per sectie'),
       monthLegend(),
@@ -219,12 +233,11 @@ export async function viewWhen(root, rerender) {
         h('p', { class: 'small muted' }, tr.rail ? `Terugreis vanaf station ${tr.rail.n} (${num(tr.rail.m)} m van het eindpunt).` : 'Geen station bij het eindpunt: reken op bus of taxi naar de trein.'),
         h('button', { class: 'btn', onclick: () => newTripFrom(tr.stages[0], tr.stages.length) }, 'Maak deze reis aan'))))),
     h('section', { class: 'note' },
-      h('h2', null, 'Strategisch advies'),
+      h('h2', null, 'Advies'),
       h('ul', null,
-        h('li', null, 'Het knelpunt is de Alpenoversteek: tien weken per jaar, van begin juli tot half september. Leg die reis als eerste vast en reken terug.'),
-        h('li', null, 'Loop de dagen langs het Meer van Genève los van de bergdagen. Dat geeft een voorjaarsreis extra en houdt de zomerreis kort.'),
-        h('li', null, 'Bewaar Po-vlakte, Toscane en Lazio voor april, mei of oktober. Wie in de zomervakantie vastzit, loopt beter eerst de Vogezen en Jura en schuift Italië naar het voor- of najaar.'),
-        h('li', null, 'Met twee reizen per jaar, één in mei of juni en één in september, sta je in ongeveer zeven jaar in Rome. Met drie reizen per jaar in vijf.'))));
+        h('li', null, 'Voor mei en juni 2027: Trier tot Wissembourg is ruim 350 km. Dat zijn 19 wandeldagen, of 21 met de vijf korte dagen door het Dahner Felsenland.'),
+        h('li', null, 'De Rijnvlakte kan vroeg in het voorjaar, als het Zwarte Woud nog sneeuw heeft.'),
+        h('li', null, 'Het Zwarte Woud vraagt een aparte reis van negen dagen tussen mei en oktober. Baden-Baden en Titisee hebben allebei een goede treinverbinding.'))));
 }
 
 export function viewSettings(root, rerender) {
