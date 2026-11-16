@@ -2,7 +2,7 @@
 
 # naam van verplichte stopplaatsen (pins uit corridor.py)
 PIN_NAMES = {
-    "idar": "Idar-Oberstein", "kaiserslautern": "Kaiserslautern", "wissembourg": "Wissembourg", "perl": "Perl",
+    "idar": "Idar-Oberstein", "kusel": "Kusel", "kaiserslautern": "Kaiserslautern", "wissembourg": "Wissembourg", "perl": "Perl",
     "lausanne": "Lausanne", "gsb": "Col du Grand-Saint-Bernard", "stgingolph": "Saint-Gingolph",
     "leshouches": "Les Houches", "courmayeur": "Courmayeur", "orsieres": "Orsières",
 }
