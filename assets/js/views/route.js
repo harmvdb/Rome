@@ -314,6 +314,7 @@ function calibrationCard(rerender) {
       h('p', null, h('strong', null, `Uit ${res.n} ${res.n === 1 ? 'wandeling' : 'wandelingen'} (${Math.round(res.flatKm)} km, ${num(res.upM)} m stijgen): `),
         `${res.pace.flat.toLocaleString('nl-NL')} km per uur vlak, ${res.pace.up} m per uur stijgen, ${res.pace.down} m per uur dalen, ${res.pace.pauseMin} minuten pauze per loopuur. `,
         `Nu ingesteld: ${cur.flat.toLocaleString('nl-NL')} km per uur en ${cur.up} m per uur.`),
+      res.capped ? h('p', { class: 'warn-t' }, `Je zwaarste wandeling klimt ${res.maxClimb} meter per kilometer. Voor steilere etappes zegt deze data weinig. Het klimtempo is daarom voorzichtig begrensd op 700 meter per uur. Na je eerste bergetappes stelt de app dit bij.`) : null,
       h('p', { class: 'muted small' }, res.mode === 'vol' ? `Vlak en klimmen zijn apart bepaald. Gemiddelde afwijking per wandeling: ${Math.round(res.rms * 100)} procent.`
         : 'Te weinig wandelingen of te weinig verschil in hoogtemeters om vlak en klimmen apart te bepalen. Het tempo is als geheel geschaald. Voeg minstens vier wandelingen toe, waaronder vlakke en bergachtige.'),
       h('button', { class: 'btn primary', onclick: () => { state.settings.pace = { ...res.pace }; save(); toast('Tempo overgenomen. De etappes zijn opnieuw ingedeeld.'); rerender(); } }, 'Neem dit tempo over')) : null);
@@ -356,8 +357,8 @@ export function viewSettings(root, rerender) {
       h('p', { class: 'muted' }, 'De looptijd telt afstand en hoogteverschil apart en neemt de kleinste van de twee voor de helft mee. Pauzes komen erbij. Pas de waarden aan tot de tijden kloppen met je eigen ervaring.'),
       h('div', { class: 'grid-form' },
         h('label', null, 'Snelheid vlak (km per uur)', h('input', { type: 'number', step: '0.1', min: '2', max: '7', value: p.flat, onchange: setPace('flat') })),
-        h('label', null, 'Stijgen (meter per uur)', h('input', { type: 'number', step: '10', min: '150', max: '700', value: p.up, onchange: setPace('up') })),
-        h('label', null, 'Dalen (meter per uur)', h('input', { type: 'number', step: '10', min: '200', max: '1000', value: p.down, onchange: setPace('down') })),
+        h('label', null, 'Stijgen (meter per uur)', h('input', { type: 'number', step: '10', min: '150', max: '1200', value: p.up, onchange: setPace('up') })),
+        h('label', null, 'Dalen (meter per uur)', h('input', { type: 'number', step: '10', min: '200', max: '2000', value: p.down, onchange: setPace('down') })),
         h('label', null, 'Korte pauzes (minuten per loopuur)', h('input', { type: 'number', step: '1', min: '0', max: '30', value: p.pauseMin, onchange: setPace('pauseMin') })),
         h('label', null, 'Lunchpauze (minuten)', h('input', { type: 'number', step: '5', min: '0', max: '120', value: p.lunchMin, onchange: setPace('lunchMin') })),
         h('label', null, 'Aantal personen', h('input', { type: 'number', step: '1', min: '1', max: '8', value: s.adults, onchange: (e) => { s.adults = Math.max(1, Number(e.target.value) || 1); save(); } }))),

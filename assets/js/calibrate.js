@@ -50,7 +50,7 @@ export function parseGarminCSV(text) {
   const col = (re, not) => head.findIndex((h) => re.test(h) && !(not && not.test(h)));
   const c = {
     type: col(/type/), date: col(/^(datum|date)/), title: col(/^(titel|title)/), km: col(/^(afstand|distance)/),
-    time: col(/^(tijd|time)$/), moving: col(/beweging|moving/), elapsed: col(/verstreken|elapsed/),
+    time: col(/^(tijd|time)$/), moving: col(/bewog|beweging|moving/), elapsed: col(/verstreken|elapsed/),
     up: col(/stijging|ascent/), down: col(/daling|descent/),
   };
   if (c.km < 0 || c.type < 0) throw new Error('De kolommen Afstand en Activiteittype ontbreken. Is dit de CSV-export van de activiteitenlijst?');
@@ -113,11 +113,14 @@ export function fit(logs = state.logs) {
   const err = (flat, up) => use.reduce((s, l) => s + ((timeOf(l.km, l.up, l.down, { flat, up, down: up * 5 / 3, pauseMin: 0, lunchMin: 0 }).walk - l.moving) / l.moving) ** 2, 0) / use.length;
   const climb = use.map((l) => l.up / l.km);
   const spread = Math.max(...climb) - Math.min(...climb);
+  // Zonder steile dagen in de data is het klimtempo niet betrouwbaar te bepalen: begrens het dan voorzichtig.
+  const steep = Math.max(...climb) >= 40;
+  const capUp = steep ? 1200 : 700;
   let best;
   if (use.length >= 4 && spread >= 12) {
     best = { e: Infinity };
-    for (let flat = 3; flat <= 6.5; flat += 0.05) for (let up = 200; up <= 800; up += 10) { const e = err(flat, up); if (e < best.e) best = { e, flat, up }; }
-    best.mode = 'vol';
+    for (let flat = 3; flat <= 6.5; flat += 0.05) for (let up = 200; up <= capUp; up += 10) { const e = err(flat, up); if (e < best.e) best = { e, flat, up }; }
+    best.mode = 'vol'; best.capped = !steep && best.up >= capUp;
   } else {
     // te weinig variatie in hoogtemeters: schaal het huidige tempo als geheel
     const f = use.reduce((s, l) => s + timeOf(l.km, l.up, l.down, cur).walk, 0) / use.reduce((s, l) => s + l.moving, 0);
@@ -126,7 +129,7 @@ export function fit(logs = state.logs) {
   }
   const mov = use.reduce((s, l) => s + l.moving, 0), pause = use.reduce((s, l) => s + Math.max(0, l.total - l.moving), 0);
   return {
-    n: use.length, mode: best.mode, rms: Math.sqrt(best.e),
+    n: use.length, mode: best.mode, capped: !!best.capped, maxClimb: Math.round(Math.max(...climb)), rms: Math.sqrt(best.e),
     pace: { flat: Math.round(best.flat * 10) / 10, up: Math.round(best.up / 10) * 10, down: Math.round(best.up * 5 / 3 / 10) * 10,
       pauseMin: Math.min(30, Math.round(60 * pause / mov)), lunchMin: 0 },
     flatKm: use.reduce((s, l) => s + l.km, 0), upM: use.reduce((s, l) => s + l.up, 0),
