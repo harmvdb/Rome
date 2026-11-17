@@ -2,7 +2,7 @@
 
 import { h, km, hours, num, euro, toast, fmtDate, addDays, todayISO, parseISO, uid, download, MONTHS_LONG } from '../util.js';
 import { state, save } from '../store.js';
-import { stage as getStage, totals, time, KIND, stageStay } from '../data.js';
+import { stage as getStage, totals, time, KIND, stageStay, isDone } from '../data.js';
 import { RATING } from '../content.js';
 import { statGrid, stageBadges, extLink, monthStrip } from '../components.js';
 import { shareGPX, downloadGPX } from '../gpx.js';
@@ -143,7 +143,7 @@ export function viewTrips(root, rerender) {
   const t = totals();
   const all = t.all.map((a) => a.st);
   const def = t.next ? t.next.st.id : all[0].id;
-  const startSel = h('select', { id: 'trip-start' }, t.all.map((a) => h('option', { value: a.st.id, selected: a.st.id === def }, `${a.n}. ${a.st.from} → ${a.st.to}${state.done[a.st.id] ? ' (gelopen)' : ''}`)));
+  const startSel = h('select', { id: 'trip-start' }, t.all.map((a) => h('option', { value: a.st.id, selected: a.st.id === def }, `${a.n}. ${a.st.from} → ${a.st.to}${isDone(a.st) ? ' (gelopen)' : ''}`)));
   const countSel = h('select', { id: 'trip-count' }, [5, 6, 7, 8, 9, 10].map((n) => h('option', { value: n, selected: n === (state.settings.perTrip || 8) }, `${n} etappes`)));
   const preview = h('p', { class: 'muted small' });
   const upd = () => {

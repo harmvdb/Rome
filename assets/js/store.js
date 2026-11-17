@@ -9,10 +9,12 @@ const defaults = () => ({
     pace: { flat: 4, up: 300, down: 500, pauseMin: 10, lunchMin: 30 },
     adults: 1,
     perTrip: 8,
+    day: { min: 7, max: 9, net: false },  // gewenste dagduur in uren; net = alleen looptijd, zonder pauzes
   },
   choice: {},   // sectie-id -> variant-id
   done: {},     // etappe-id -> datum
   notes: {},    // etappe-id -> { rating, text }
+  logs: [],     // gelopen wandelingen voor de tempokalibratie
   trips: [],
 });
 
@@ -21,7 +23,7 @@ function load() {
   try {
     const raw = JSON.parse(localStorage.getItem(KEY) || 'null');
     if (raw && typeof raw === 'object') {
-      return { ...base, ...raw, settings: { ...base.settings, ...(raw.settings || {}), pace: { ...base.settings.pace, ...((raw.settings || {}).pace || {}) } } };
+      return { ...base, ...raw, settings: { ...base.settings, ...(raw.settings || {}), pace: { ...base.settings.pace, ...((raw.settings || {}).pace || {}) }, day: { ...base.settings.day, ...((raw.settings || {}).day || {}) } } };
     }
   } catch (e) { /* opslag niet beschikbaar of beschadigd: start schoon */ }
   return base;

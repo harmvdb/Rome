@@ -1,7 +1,7 @@
 // Gedeelde schermonderdelen: etapperijen, maandbalk, klimaatgrafiek, hoogteprofiel.
 
 import { h, km, meters, hours, num, MONTHS } from './util.js';
-import { time } from './data.js';
+import { time, isDone } from './data.js';
 import { state } from './store.js';
 import { RATING } from './content.js';
 
@@ -22,7 +22,7 @@ export function stageBadges(st) {
 
 export function stageRow(st, n, extra) {
   const t = time(st);
-  const done = !!state.done[st.id];
+  const done = isDone(st);
   return h('a', { class: 'stage-row' + (done ? ' done' : ''), href: `#/etappe/${st.id}` },
     h('span', { class: 'n' }, done ? '✓' : String(n)),
     h('span', { class: 'name' },

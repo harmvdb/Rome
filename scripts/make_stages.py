@@ -281,6 +281,72 @@ def split(line, nodes):
     path.reverse()
     return [nodes[i] for i in path]
 
+# ---------- planningsdata voor de app ----------
+
+def export_plan(v, sec, line, nodes, items, stations):
+    """Schrijf alles wat de app nodig heeft om zelf etappes in te delen: lijn, hoogte, stopplaatsen en adressen."""
+    nodes = sorted(nodes, key=lambda n: n["s"])
+    keep = rdp(line.pts, 6.0)
+    pts = line.pts[keep]
+    ls = [int(round(float(line.cum[k]))) for k in keep]
+    n100 = int(line.L // 100) + 1
+    idx = [min(len(line.s) - 1, i * 5) for i in range(n100)] + [len(line.s) - 1]
+    beds = [x for x in items if x["k"] not in ("shop", "water") and x["n"]]
+    pid = {x["id"]: i for i, x in enumerate(beds)}
+    stops = []
+    seen = {}
+    for n in nodes:
+        name = n.get("name") or f"km {n['s'] / 1000:.0f}"
+        name = RENAME.get((v["id"], name), RENAME.get(name, name))
+        if name in seen and abs(n["s"] - seen[name]) < 15000 and not n["forced"]:
+            # twee stopplaatsen met dezelfde naam: noem de tweede naar de dichtstbijzijnde andere plaats
+            alt = sorted((wmt.hav((n["lat"], n["lon"]), (p["lat"], p["lon"])), p["n"]) for p in PLACES
+                         if p["pt"] in ("city", "town", "village") and p["n"] != name.split(" (")[0]
+                         and abs(p["lat"] - n["lat"]) < 0.05 and abs(p["lon"] - n["lon"]) < 0.07)
+            if alt and alt[0][0] < 4000:
+                name = alt[0][1]
+        seen.setdefault(name, n["s"])
+        i1 = line.point_at(n["s"])
+        end = (float(line.pts[i1][0]), float(line.pts[i1][1]))
+        near = []
+        for x in beds:
+            de = wmt.hav(end, (x["lat"], x["lon"]))
+            if de <= max(2200, n.get("off", 0) + 600) or (abs(x["s"] - n["s"]) <= 1500 and x["d"] < 1400):
+                near.append((int(de), pid[x["id"]]))
+        near.sort()
+        rail = None
+        for p in stations:
+            if abs(p["lat"] - end[0]) > 0.04 or abs(p["lon"] - end[1]) > 0.06:
+                continue
+            de = wmt.hav(end, (p["lat"], p["lon"]))
+            if de < 3000 and (rail is None or de < rail["m"]):
+                rail = {"n": p["n"], "m": int(de)}
+        st = {"s": int(round(n["s"])), "n": name, "q": round(float(n.get("q", 9)), 1), "t": n.get("tier", 1),
+              "off": int(n.get("off", 0)), "pt": n.get("ptype") or "", "a": name in ANCHORS, "f": bool(n["forced"]),
+              "ll": [round(end[0], 5), round(end[1], 5)], "p": [[m, i] for m, i in near[:40]]}
+        if rail:
+            st["rail"] = rail
+        stops.append(st)
+    segs = []
+    for k in keep:
+        t = line.trail_idx[k]
+        if not segs or segs[-1][1] != t:
+            segs.append([int(round(float(line.cum[k]))), t])
+    out = {
+        "id": v["id"], "len": int(round(line.L)), "step": 100,
+        "up": [int(round(float(line.cup[i]))) for i in idx], "down": [int(round(float(line.cdn[i]))) for i in idx],
+        "ele": [int(round(float(line.es[i]))) for i in idx],
+        "line": encode(pts), "ls": ls, "trails": line.trails, "segs": segs, "stops": stops,
+        "pois": [{k2: v2 for k2, v2 in {"id": x["id"], "k": x["k"], "n": x["n"], "lat": x["lat"], "lon": x["lon"], "s": int(x["s"]),
+                  "d": int(x["d"]), "web": x.get("web", ""), "tel": x.get("tel", ""), "mail": x.get("mail", ""), "stars": x.get("stars", ""),
+                  "beds": x.get("beds", ""), "ele": x.get("ele", ""), "op": x.get("op", "")}.items() if v2 not in ("", None)} for x in beds],
+        "supply": sorted(({k2: v2 for k2, v2 in {"k": x["k"], "s": int(x["s"]), "lat": x["lat"], "lon": x["lon"], "n": x.get("n", ""),
+                   "st": x.get("st", "")}.items() if v2 != ""} for x in items if x["k"] in ("shop", "water") and x["d"] < 350 and (x["k"] == "water" or x.get("n"))),
+                   key=lambda x: x["s"]),
+    }
+    os.makedirs(os.path.join(OUT, "plan"), exist_ok=True)
+    json.dump(out, open(os.path.join(OUT, "plan", f"{v['id']}.json"), "w"), ensure_ascii=False, separators=(",", ":"))
+
 # ---------- hoofdprogramma ----------
 
 def main():
@@ -291,8 +357,7 @@ def main():
         elif p["k"] == "pass" and p["n"]:
             PLACES.append({**p, "pt": "pass"})
     stations = [p for p in pois.values() if p["k"] == "station" and p["n"]]
-    os.makedirs(os.path.join(OUT, "geo"), exist_ok=True)
-    os.makedirs(os.path.join(OUT, "stay"), exist_ok=True)
+    os.makedirs(os.path.join(OUT, "plan"), exist_ok=True)
     only = set(sys.argv[1:])
     route = {"generated": time.strftime("%Y-%m-%d"), "pace": {"flat": V_FLAT, "up": V_UP, "down": V_DOWN,
              "pausePerHour": PAUSE_PER_HOUR, "pauseFixed": PAUSE_FIXED}, "sections": []}
@@ -329,6 +394,7 @@ def main():
             for c in cands:
                 if all(abs(c["s"] - f) > 2500 for f in fs):
                     nodes.append(c)
+            export_plan(v, sec, line, nodes, items, stations)
             stops = split(line, nodes)
             stages, geo, stay = [], {}, {}
             for i, (a, b) in enumerate(zip(stops, stops[1:])):
@@ -430,10 +496,10 @@ def main():
             ov = line.pts[rdp(line.pts, 60.0)]
             V = {"id": v["id"], "name": v["name"], "recommended": v["recommended"], "km": round(line.L / 1000, 1),
                  "up": int(line.cup[-1]), "down": int(line.cdn[-1]), "max": int(line.es.max()), "trails": line.trails,
-                 "overview": encode(ov), "stages": stages}
+                 "overview": encode(ov), "refStages": len(stages)}
+            if v.get("hours"):
+                V["hours"] = list(v["hours"])
             S["variants"].append(V)
-            json.dump(geo, open(os.path.join(OUT, "geo", f"{v['id']}.json"), "w"), separators=(",", ":"))
-            json.dump(stay, open(os.path.join(OUT, "stay", f"{v['id']}.json"), "w"), ensure_ascii=False, separators=(",", ":"))
             report.append(f"-- {v['id']} {v['name']}: {len(stages)} etappes, {line.L / 1000:.0f} km, +{line.cup[-1]:.0f} m")
         route["sections"].append(S)
     if not only:

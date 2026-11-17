@@ -3,7 +3,8 @@
 /* global L */
 import { h, km, meters, hours, num, toast, todayISO, hav } from '../util.js';
 import { state, save } from '../store.js';
-import { stage as getStage, totals, time, stageLine, KIND } from '../data.js';
+import { stage as getStage, totals, time, stageLine, KIND, isDone } from '../data.js';
+import { addLogs } from '../calibrate.js';
 import { SECTIONS, GARMIN_STEPS, REVIEW_SITES, TRAIL_QUERY } from '../content.js';
 import { makeMap, dot, stayMarker } from '../mapview.js';
 import { profile, statGrid, stageBadges, extLink, monthStrip } from '../components.js';
@@ -21,15 +22,38 @@ export function garminHelp() {
     h('p', { class: 'muted small' }, 'Op een iPhone opent het deelmenu Garmin Connect direct. Op Android laat Chrome het delen van GPX-bestanden niet altijd toe: de app downloadt het bestand dan en je opent het vanuit Downloads met Garmin Connect.'));
 }
 
+function doneForm(st, id, rerender) {
+  const date = h('input', { type: 'date', value: todayISO(), 'aria-label': 'Datum' });
+  const total = h('input', { type: 'text', placeholder: 'bijvoorbeeld 7:45', 'aria-label': 'Totale tijd onderweg' });
+  const pause = h('input', { type: 'number', min: '0', step: '5', placeholder: 'minuten', 'aria-label': 'Pauze in minuten' });
+  const go = () => {
+    const p = String(total.value || '').trim().split(':').map(Number);
+    const tot = total.value && !p.some(Number.isNaN) ? (p.length > 1 ? p[0] + p[1] / 60 : p[0]) : 0;
+    state.done[id] = date.value || todayISO();
+    if (tot > 0) {
+      const moving = Math.max(0.5, tot - (Number(pause.value) || 0) / 60);
+      addLogs([{ id, date: state.done[id], name: `${st.from} → ${st.to}`, km: st.km, up: st.up, down: st.down, moving, total: tot, src: 'app' }]);
+      toast('Opgeslagen. Je tijd telt mee in de tempokalibratie.');
+    }
+    save(); rerender();
+  };
+  return h('details', { class: 'help' },
+    h('summary', null, 'Gelopen? Leg je werkelijke tijd vast'),
+    h('p', { class: 'muted small' }, 'Met je werkelijke tijd stelt de app je tempo bij. Onder Instellingen neem je het nieuwe tempo over en deelt de app de resterende etappes opnieuw in. De tijd invullen is niet verplicht.'),
+    h('div', { class: 'grid-form' },
+      h('label', null, 'Datum', date), h('label', null, 'Totale tijd onderweg (u:mm)', total), h('label', null, 'Waarvan pauze (minuten)', pause)),
+    h('button', { class: 'btn primary', onclick: go }, 'Markeer als gelopen'));
+}
+
 export async function viewStage(root, id, rerender) {
   const st = getStage(id);
   if (!st) { root.append(h('p', null, 'Etappe niet gevonden.')); return; }
   const all = totals().all;
   const pos = all.findIndex((a) => a.st.id === id);
-  const n = pos >= 0 ? pos + 1 : st.n;
+  const n = pos >= 0 ? pos + 1 : 0;
   const prev = pos > 0 ? all[pos - 1].st : null, next = pos >= 0 && pos < all.length - 1 ? all[pos + 1].st : null;
   const t = time(st);
-  const done = state.done[id];
+  const done = state.done[id] || (isDone(st) ? true : null);
   const mapEl = h('div', { class: 'map' });
   const profEl = h('div', { class: 'profile-slot' }, h('p', { class: 'muted' }, 'Profiel laden…'));
   const stayEl = h('div', null, h('p', { class: 'muted' }, 'Adressen laden…'));
@@ -58,10 +82,8 @@ export async function viewStage(root, id, rerender) {
     h('div', { class: 'cta wrap' },
       h('button', { class: 'btn primary', onclick: () => shareGPX(st, n) }, 'Stuur naar Garmin'),
       h('button', { class: 'btn', onclick: () => downloadGPX(st, n) }, 'Download GPX'),
-      h('button', { class: 'btn' + (done ? ' on' : ''), onclick: () => {
-        if (state.done[id]) delete state.done[id]; else state.done[id] = todayISO();
-        save(); rerender();
-      } }, done ? 'Gelopen ✓ (ongedaan maken)' : 'Markeer als gelopen')),
+      done ? h('button', { class: 'btn on', onclick: () => { delete state.done[id]; save(); rerender(); } }, 'Gelopen ✓ (ongedaan maken)') : null),
+    done ? null : doneForm(st, id, rerender),
     garminHelp(),
     mapEl, profEl,
     h('section', null,

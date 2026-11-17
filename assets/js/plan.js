@@ -1,7 +1,7 @@
 // Meerjarenplan: verdeel de resterende etappes in reizen van 5 tot 10 dagen die bij een station eindigen.
 
 import { state } from './store.js';
-import { activeStages, time } from './data.js';
+import { activeStages, time, isDone } from './data.js';
 import { SECTIONS } from './content.js';
 import { MONTHS } from './util.js';
 
@@ -30,7 +30,7 @@ export function bestMonthsText(months) {
 
 export function propose(per) {
   const target = Math.min(10, Math.max(5, per || state.settings.perTrip || 8));
-  const all = activeStages().filter((a) => !state.done[a.st.id]).map((a) => a.st);
+  const all = activeStages().filter((a) => !isDone(a.st)).map((a) => a.st);
   const n = all.length;
   if (!n) return [];
   const lo = Math.max(5, target - 2), hi = Math.min(10, target + 2);

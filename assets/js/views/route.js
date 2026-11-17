@@ -3,7 +3,8 @@
 /* global L */
 import { h, km, meters, hours, num, toast, download, MONTHS_LONG } from '../util.js';
 import { state, save, exportJSON, importJSON, resetAll, defaultPace } from '../store.js';
-import { route, chosen, totals, time, decode, section as getSection } from '../data.js';
+import { route, chosen, totals, time, decode, section as getSection, isDone, dayWindow } from '../data.js';
+import { parseGarminCSV, parseGPX, addLogs, fit, predicted } from '../calibrate.js';
 import { SECTIONS, RATING, NEXT } from '../content.js';
 import { makeMap, COLORS } from '../mapview.js';
 import { stageRow, monthStrip, monthLegend, climateChart, statGrid, variantStats, badge, extLink } from '../components.js';
@@ -29,7 +30,7 @@ function drawRoute(map, opts = {}) {
     if (!opts.only) line.on('click', () => { location.hash = `#/sectie/${sec.id}`; });
     bounds.extend(line.getBounds());
     for (const st of v.stages) {
-      const done = !!state.done[st.id];
+      const done = isDone(st);
       const m = L.circleMarker(st.b, { radius: opts.only ? 5 : 3.2, color: '#fff', weight: 1, fillColor: done ? '#3d7a3a' : COLORS[si % COLORS.length], fillOpacity: 1 }).addTo(map);
       m.bindTooltip(`${st.to}${done ? ' (gelopen)' : ''}`);
       m.on('click', () => { location.hash = `#/etappe/${st.id}`; });
@@ -86,7 +87,7 @@ export function viewRoute(root, rerender) {
         const v = chosen(sec);
         const info = SECTIONS[sec.id] || {};
         const months = ((info.variants || {})[v.id] || {}).months || info.months;
-        const done = v.stages.filter((st) => state.done[st.id]).length;
+        const done = v.stages.filter((st) => isDone(st)).length;
         return h('article', { class: 'card sec' },
           h('header', null,
             h('span', { class: 'secn', style: { background: COLORS[si % COLORS.length] } }, String(si + 1)),
@@ -171,7 +172,7 @@ export async function viewSection(root, id, rerender) {
         h('div', null, h('h3', null, `Terug vanaf ${sec.to}`), travelPanel({ name: sec.to, ll: v.stages[v.stages.length - 1].b }, { name: state.settings.home, ll: state.settings.homeLL }, null, { time: '09:00' })))),
     h('section', null,
       h('div', { class: 'row-head' }, h('h2', null, `Etappes (${v.stages.length})`),
-        h('button', { class: 'btn primary', onclick: () => newTripFrom(v.stages.find((st) => !state.done[st.id]) || v.stages[0]) }, 'Plan een reis in deze sectie')),
+        h('button', { class: 'btn primary', onclick: () => newTripFrom(v.stages.find((st) => !isDone(st)) || v.stages[0]) }, 'Plan een reis in deze sectie')),
       h('div', { class: 'stage-list' }, v.stages.map((st, i) => stageRow(st, offset + i + 1)))),
     h('nav', { class: 'pager' },
       prev ? h('a', { href: `#/sectie/${prev.id}` }, `← ${prev.name}`) : h('span'),
@@ -189,7 +190,7 @@ export function viewStages(root) {
   root.append(
     h('header', { class: 'page-head' },
       h('h1', null, 'Alle etappes'),
-      h('p', { class: 'lead' }, `${t.all.length} etappes, ${km(t.total)}, ${num(t.up)} m stijgen. Tijden zijn inclusief pauzes en volgen je tempo uit de instellingen.`)));
+      h('p', { class: 'lead' }, `${t.all.length} etappes, ${km(t.total)}, ${num(t.up)} m stijgen. Tijden zijn inclusief pauzes. De indeling volgt je tempo en je gewenste dagduur uit de instellingen.`)));
   let i = 0;
   route.sections.forEach((sec, si) => {
     const v = chosen(sec);
@@ -240,13 +241,91 @@ export async function viewWhen(root, rerender) {
         h('li', null, 'Het Zwarte Woud vraagt een aparte reis van negen dagen tussen mei en oktober. Baden-Baden en Titisee hebben allebei een goede treinverbinding.'))));
 }
 
+function dayCard(rerender) {
+  const d = state.settings.day;
+  const w = dayWindow();
+  const set = (k) => (e) => { const v = Number(e.target.value); if (v >= 3 && v <= 12) { d[k] = v; if (d.max < d.min + 0.5) d.max = d.min + 0.5; save(); rerender(); } };
+  const rows = route.sections.map((sec) => { const v = chosen(sec); return { sec, v, n: v.stages.length, ref: v.refStages, long: v.stages.filter((st) => time(st).cls === 'long').length, short: v.stages.filter((st) => time(st).cls === 'short').length }; });
+  const tot = rows.reduce((x, r) => x + r.n, 0), ref = rows.reduce((x, r) => x + r.ref, 0);
+  return h('section', { class: 'card form' },
+    h('h2', null, 'Dagduur'),
+    h('p', { class: 'muted' }, 'Hoe lang wil je per dag onderweg zijn? De app deelt de route opnieuw in etappes in die binnen deze uren vallen, met jouw tempo. Elke etappe eindigt bij een plek met een bed.'),
+    h('div', { class: 'grid-form' },
+      h('label', null, 'Minimaal (uur)', h('input', { type: 'number', step: '0.5', min: '3', max: '11', value: d.min, onchange: set('min') })),
+      h('label', null, 'Maximaal (uur)', h('input', { type: 'number', step: '0.5', min: '4', max: '12', value: d.max, onchange: set('max') })),
+      h('label', { class: 'check' }, h('input', { type: 'checkbox', checked: d.net, onchange: (e) => { d.net = e.target.checked; save(); rerender(); } }), 'Tel alleen looptijd, pauzes komen er nog bij')),
+    h('p', null, h('strong', null, `${tot} etappes`), ` met ${w.min} tot ${w.max} uur ${w.net ? 'looptijd' : 'onderweg, inclusief pauzes'}. De eerste indeling (6 tot 9 uur, standaardtempo) had er ${ref}.`,
+      tot < ref ? ` Dat scheelt ${ref - tot} dagen en overnachtingen.` : ''),
+    h('div', { class: 'tablebox' }, h('table', { class: 'mini' },
+      h('thead', null, h('tr', null, h('th', null, 'Sectie'), h('th', null, 'Etappes'), h('th', null, 'Eerst'), h('th', null, 'Te lang'), h('th', null, 'Te kort'))),
+      h('tbody', null, rows.map((r) => h('tr', null, h('td', null, h('a', { href: `#/sectie/${r.sec.id}` }, r.sec.name), r.v.hours ? ' (vaste korte dagen)' : ''), h('td', null, String(r.n)), h('td', null, String(r.ref)), h('td', null, r.long ? String(r.long) : ''), h('td', null, r.short ? String(r.short) : '')))))),
+    h('p', { class: 'muted small' }, 'Te lang of te kort betekent: er ligt geen overnachting op de goede afstand. Bekijk die etappes en beslis zelf.'));
+}
+
+const hm = (t) => `${Math.floor(t)}:${String(Math.round((t % 1) * 60)).padStart(2, '0')}`;
+function parseHM(txt) {
+  const p = String(txt || '').trim().split(':').map(Number);
+  if (p.some(Number.isNaN) || !txt) return 0;
+  return p.length > 1 ? p[0] + p[1] / 60 : p[0];
+}
+
+function calibrationCard(rerender) {
+  const res = fit();
+  const cur = state.settings.pace;
+  const pick = (accept, multiple, handler) => { const el = h('input', { type: 'file', accept, multiple, style: { display: 'none' }, onchange: async (e) => { await handler([...e.target.files]); e.target.value = ''; } }); return el; };
+  const csvIn = pick('.csv,text/csv', false, async (files) => {
+    try { const n = addLogs(parseGarminCSV(await files[0].text())); toast(n ? `${n} wandelingen toegevoegd` : 'Geen nieuwe wandelingen van 8 km of meer gevonden'); rerender(); } catch (err) { toast(err.message); }
+  });
+  const gpxIn = pick('.gpx,application/gpx+xml', true, async (files) => {
+    const list = [];
+    for (const f of files) { try { list.push(parseGPX(await f.text(), f.name)); } catch (err) { toast(err.message); } }
+    if (list.length) { toast(`${addLogs(list)} wandelingen toegevoegd`); rerender(); }
+  });
+  const f = { date: h('input', { type: 'date', 'aria-label': 'Datum' }), name: h('input', { type: 'text', placeholder: 'Naam' }), km: h('input', { type: 'number', step: '0.1', placeholder: 'km' }),
+    up: h('input', { type: 'number', placeholder: 'm stijgen' }), down: h('input', { type: 'number', placeholder: 'm dalen' }), moving: h('input', { type: 'text', placeholder: 'looptijd u:mm' }), total: h('input', { type: 'text', placeholder: 'totaal u:mm' }) };
+  const addManual = () => {
+    const km = Number(f.km.value), moving = parseHM(f.moving.value), total = parseHM(f.total.value) || moving;
+    if (!(km > 0) || !(moving > 0)) { toast('Vul minstens afstand en looptijd in'); return; }
+    addLogs([{ id: Math.random().toString(36).slice(2, 9), date: f.date.value, name: f.name.value || 'Wandeling', km, up: Number(f.up.value) || 0, down: Number(f.down.value) || Number(f.up.value) || 0, moving, total: Math.max(total, moving), src: 'hand' }]);
+    rerender();
+  };
+  return h('section', { class: 'card form' },
+    h('h2', null, 'Tempo afleiden uit echte wandelingen'),
+    h('p', { class: 'muted' }, 'Voeg wandelingen toe die je al gelopen hebt. De app zoekt het tempo dat jouw looptijden het best verklaart, apart voor vlak lopen en voor klimmen. Lange dagen met hoogtemeters wegen het zwaarst. Gelopen etappes uit deze app komen er vanzelf bij.'),
+    h('div', { class: 'cta wrap' },
+      h('button', { class: 'btn primary', onclick: () => csvIn.click() }, 'Importeer Garmin-CSV'), csvIn,
+      h('button', { class: 'btn', onclick: () => gpxIn.click() }, 'Importeer GPX-bestanden'), gpxIn),
+    h('details', { class: 'help' }, h('summary', null, 'Zo haal je de lijst uit Garmin Connect'),
+      h('ol', null,
+        h('li', null, 'Open connect.garmin.com op een computer en ga naar Activiteiten, Alle activiteiten.'),
+        h('li', null, 'Filter op Wandelen en scrol omlaag tot alle wandelingen die je wilt gebruiken zichtbaar zijn.'),
+        h('li', null, 'Klik rechtsboven op Exporteer CSV en kies dat bestand hier.')),
+      h('p', { class: 'muted small' }, 'De app gebruikt alleen wandelingen van 8 km of meer. Voor één wandeling kun je ook de GPX exporteren via het tandwiel bij de activiteit.')),
+    h('details', { class: 'help' }, h('summary', null, 'Voeg zelf een wandeling toe'),
+      h('div', { class: 'inline-form' }, f.date, f.name, f.km, f.up, f.down, f.moving, f.total, h('button', { class: 'btn small', onclick: addManual }, 'Voeg toe'))),
+    state.logs.length ? h('div', { class: 'tablebox' }, h('table', { class: 'mini' },
+      h('thead', null, h('tr', null, h('th', null, 'Datum'), h('th', null, 'Wandeling'), h('th', null, 'km'), h('th', null, 'Stijgen'), h('th', null, 'Gelopen'), h('th', null, 'Model nu'), h('th', null, 'Verschil'), h('th', null, ''))),
+      h('tbody', null, state.logs.map((l) => { const m = predicted(l); const dv = (m - l.moving) / l.moving * 100; return h('tr', { class: l.skip ? 'off' : '' },
+        h('td', null, l.date || ''), h('td', null, (l.name || '').slice(0, 40)), h('td', null, l.km.toFixed(1)), h('td', null, String(l.up)), h('td', null, hm(l.moving)), h('td', null, hm(m)),
+        h('td', { class: Math.abs(dv) > 15 ? 'warn' : '' }, `${dv > 0 ? '+' : ''}${Math.round(dv)}%`),
+        h('td', null, h('button', { class: 'btn small ghost', title: 'Telt mee of niet', onclick: () => { l.skip = !l.skip; save(); rerender(); } }, l.skip ? 'telt niet' : 'telt mee'),
+          h('button', { class: 'btn small ghost', 'aria-label': 'Verwijder', onclick: () => { state.logs = state.logs.filter((x) => x !== l); save(); rerender(); } }, '×'))); })))) : h('p', { class: 'muted' }, 'Nog geen wandelingen.'),
+    res ? h('div', { class: 'fitbox' },
+      h('p', null, h('strong', null, `Uit ${res.n} ${res.n === 1 ? 'wandeling' : 'wandelingen'} (${Math.round(res.flatKm)} km, ${num(res.upM)} m stijgen): `),
+        `${res.pace.flat.toLocaleString('nl-NL')} km per uur vlak, ${res.pace.up} m per uur stijgen, ${res.pace.down} m per uur dalen, ${res.pace.pauseMin} minuten pauze per loopuur. `,
+        `Nu ingesteld: ${cur.flat.toLocaleString('nl-NL')} km per uur en ${cur.up} m per uur.`),
+      h('p', { class: 'muted small' }, res.mode === 'vol' ? `Vlak en klimmen zijn apart bepaald. Gemiddelde afwijking per wandeling: ${Math.round(res.rms * 100)} procent.`
+        : 'Te weinig wandelingen of te weinig verschil in hoogtemeters om vlak en klimmen apart te bepalen. Het tempo is als geheel geschaald. Voeg minstens vier wandelingen toe, waaronder vlakke en bergachtige.'),
+      h('button', { class: 'btn primary', onclick: () => { state.settings.pace = { ...res.pace }; save(); toast('Tempo overgenomen. De etappes zijn opnieuw ingedeeld.'); rerender(); } }, 'Neem dit tempo over')) : null);
+}
+
 export function viewSettings(root, rerender) {
   const s = state.settings;
   const p = s.pace;
   const homeIn = h('input', { type: 'text', value: s.home, id: 'home' });
   const results = h('div', { class: 'suggest' });
   const setPace = (k) => (e) => { const v = Number(e.target.value); if (v > 0 || k.endsWith('Min')) { p[k] = v; save(); } };
-  const sample = route.sections[1].variants[0].stages[7];
+  const sv = route.sections[1].variants[0].stages; const sample = sv[sv.length - 1];
 
   async function findHome() {
     results.replaceChildren(h('p', { class: 'muted' }, 'Zoeken…'));
@@ -271,6 +350,7 @@ export function viewSettings(root, rerender) {
       h('p', { class: 'muted' }, `Nu ingesteld: ${s.home}. Zoek je eigen station of adres.`),
       h('div', { class: 'inline-form' }, homeIn, h('button', { class: 'btn', onclick: findHome }, 'Zoek')),
       results),
+    dayCard(rerender),
     h('section', { class: 'card form' },
       h('h2', null, 'Wandeltempo'),
       h('p', { class: 'muted' }, 'De looptijd telt afstand en hoogteverschil apart en neemt de kleinste van de twee voor de helft mee. Pauzes komen erbij. Pas de waarden aan tot de tijden kloppen met je eigen ervaring.'),
@@ -284,6 +364,7 @@ export function viewSettings(root, rerender) {
       h('p', { class: 'small' }, `Voorbeeld: ${sample.from} → ${sample.to}, ${km(sample.km)} met ${num(sample.up)} m stijgen duurt met deze instellingen ${hours(time(sample).total)}, waarvan ${hours(time(sample).walk)} lopen.`),
       h('div', { class: 'cta' }, h('button', { class: 'btn', onclick: () => rerender() }, 'Herbereken voorbeeld'),
         h('button', { class: 'btn', onclick: () => { s.pace = defaultPace(); save(); rerender(); } }, 'Standaardwaarden'))),
+    calibrationCard(rerender),
     h('section', { class: 'card form' },
       h('h2', null, 'Reservekopie'),
       h('p', { class: 'muted' }, 'Je keuzes, reizen en boekingen staan alleen in deze browser. Maak een reservekopie en zet die terug op een ander apparaat om verder te werken.'),

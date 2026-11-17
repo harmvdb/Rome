@@ -6,10 +6,10 @@ import { download, slug, toast } from './util.js';
 const x = (s) => String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
 
 export function stageTitle(st, n) {
-  return `${String(n ?? st.n).padStart(2, '0')} ${st.from} - ${st.to}`;
+  return `${String(n ?? 0).padStart(2, '0')} ${st.from} - ${st.to}`;
 }
 export function fileName(st, n) {
-  return `trier-rome-${String(n ?? st.n).padStart(3, '0')}-${slug(st.from)}-${slug(st.to)}.gpx`;
+  return `trier-rome-${String(n ?? 0).padStart(3, '0')}-${slug(st.from)}-${slug(st.to)}.gpx`;
 }
 
 export async function buildGPX(st, n) {

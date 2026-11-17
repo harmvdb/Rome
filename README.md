@@ -10,6 +10,7 @@ Planner voor een voettocht van Trier naar Rome over langeafstandspaden: de Saar-
 - **Openbaar vervoer**: reisadvies van huis naar het startpunt en terug, plus links naar de reisplanners.
 - **Garmin**: per etappe een GPX die je via het deelmenu naar Garmin Connect stuurt of downloadt.
 - **Wanneer**: seizoenskalender per sectie en een voorstel voor een meerjarenplan.
+- **Dagduur en tempo**: stel in hoeveel uur je per dag onderweg wilt zijn. De app deelt de route zelf in etappes in. Het tempo leid je af uit echte wandelingen via een Garmin-CSV, GPX-bestanden of de tijd die je bij een gelopen etappe invult.
 
 Alle keuzes en plannen staan in de browser (localStorage). Onder Instellingen maak je een reservekopie.
 
@@ -29,9 +30,8 @@ Open daarna `http://localhost:8000`. Elke statische host werkt: Vercel, Netlify,
 | --- | --- |
 | `index.html`, `assets/` | De app: schermen, opmaak, logica |
 | `assets/js/content.js` | Beschrijvingen, seizoensadvies, bronnen |
-| `data/route.json` | Secties, varianten en etappes |
-| `data/geo/` | Routelijn en hoogteprofiel per etappe |
-| `data/stay/` | Overnachtingen, winkels en waterpunten per etappe |
+| `data/route.json` | Secties en varianten |
+| `data/plan/` | Per variant: routelijn, hoogteprofiel, mogelijke stopplaatsen, overnachtingen, winkels en waterpunten |
 | `data/climate.json` | Maandgemiddelden per sectie |
 | `scripts/` | Pijplijn die de data opbouwt |
 | `vendor/leaflet/` | Kaartbibliotheek |
