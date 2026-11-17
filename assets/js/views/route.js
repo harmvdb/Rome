@@ -236,9 +236,9 @@ export async function viewWhen(root, rerender) {
     h('section', { class: 'note' },
       h('h2', null, 'Advies'),
       h('ul', null,
-        h('li', null, 'Voor mei en juni 2027: Trier tot Wissembourg is ruim 350 km. Dat zijn 19 wandeldagen, of 21 met de vijf korte dagen door het Dahner Felsenland.'),
-        h('li', null, 'De Rijnvlakte kan vroeg in het voorjaar, als het Zwarte Woud nog sneeuw heeft.'),
-        h('li', null, 'Het Zwarte Woud vraagt een aparte reis van negen dagen tussen mei en oktober. Baden-Baden en Titisee hebben allebei een goede treinverbinding.'))));
+        h('li', null, 'Voor mei en juni 2027: Trier tot Wissembourg is ongeveer 14 wandeldagen met jouw tempo. Met de korte dagen door het Dahner Felsenland worden het er 17.'),
+        h('li', null, 'Wissembourg tot de Titisee is daarna één reis van ongeveer 9 dagen, tussen mei en oktober. Baden-Baden en Titisee hebben allebei een goede treinverbinding.'),
+        h('li', null, 'De secties volgen het landschap. Je reizen hoeven daar niet mee samen te vallen: het voorstel hierboven knipt op stations.'))));
 }
 
 function dayCard(rerender) {
@@ -254,7 +254,7 @@ function dayCard(rerender) {
       h('label', null, 'Minimaal (uur)', h('input', { type: 'number', step: '0.5', min: '3', max: '11', value: d.min, onchange: set('min') })),
       h('label', null, 'Maximaal (uur)', h('input', { type: 'number', step: '0.5', min: '4', max: '12', value: d.max, onchange: set('max') })),
       h('label', { class: 'check' }, h('input', { type: 'checkbox', checked: d.net, onchange: (e) => { d.net = e.target.checked; save(); rerender(); } }), 'Tel alleen looptijd, pauzes komen er nog bij')),
-    h('p', null, h('strong', null, `${tot} etappes`), ` met ${w.min} tot ${w.max} uur ${w.net ? 'looptijd' : 'onderweg, inclusief pauzes'}. De eerste indeling (6 tot 9 uur, standaardtempo) had er ${ref}.`,
+    h('p', null, h('strong', null, `${tot} etappes`), ` met ${w.min} tot ${w.max} uur ${w.net ? 'looptijd' : 'onderweg, inclusief pauzes'}. De eerste indeling (6 tot 9 uur, 4 km per uur) had er ${ref}.`,
       tot < ref ? ` Dat scheelt ${ref - tot} dagen en overnachtingen.` : ''),
     h('div', { class: 'tablebox' }, h('table', { class: 'mini' },
       h('thead', null, h('tr', null, h('th', null, 'Sectie'), h('th', null, 'Etappes'), h('th', null, 'Eerst'), h('th', null, 'Te lang'), h('th', null, 'Te kort'))),

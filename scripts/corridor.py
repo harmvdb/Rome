@@ -99,6 +99,7 @@ VARIANTS = [
          {"type": "brouter", "pts": ["schweigen", "wissembourg"], "trail": "Pfälzer Waldpfad"},
      ], "pins": []},
     {"id": "s3b", "section": "s3", "name": "Vijf korte dagen", "recommended": False, "hours": (3.2, 5.6, 4.4),
+     "pace": {"flat": 4.0, "up": 300, "down": 500, "pauseMin": 10, "lunchMin": 30},
      "legs": [
          {"type": "trail", "rels": PWP, "from": "hauenstein", "to": "schweigen", "trail": "Pfälzer Waldpfad"},
          {"type": "brouter", "pts": ["schweigen", "wissembourg"], "trail": "Pfälzer Waldpfad"},

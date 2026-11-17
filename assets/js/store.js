@@ -6,10 +6,11 @@ const defaults = () => ({
   settings: {
     home: 'Utrecht Centraal',
     homeLL: [52.0894, 5.1101],
-    pace: { flat: 4, up: 300, down: 500, pauseMin: 10, lunchMin: 30 },
+    // tempo afgeleid uit 70 eigen wandelingen, met marge voor een zwaardere rugzak
+    pace: { flat: 5.3, up: 650, down: 1100, pauseMin: 24, lunchMin: 0 },
     adults: 1,
     perTrip: 8,
-    day: { min: 7, max: 9, net: false },  // gewenste dagduur in uren; net = alleen looptijd, zonder pauzes
+    day: { min: 6.5, max: 8.5, net: false },  // gewenste dagduur in uren; net = alleen looptijd, zonder pauzes
   },
   choice: {},   // sectie-id -> variant-id
   done: {},     // etappe-id -> datum

@@ -499,6 +499,8 @@ def main():
                  "overview": encode(ov), "refStages": len(stages)}
             if v.get("hours"):
                 V["hours"] = list(v["hours"])
+            if v.get("pace"):
+                V["pace"] = v["pace"]
             S["variants"].append(V)
             report.append(f"-- {v['id']} {v['name']}: {len(stages)} etappes, {line.L / 1000:.0f} km, +{line.cup[-1]:.0f} m")
         route["sections"].append(S)

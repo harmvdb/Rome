@@ -140,7 +140,7 @@ export const SECTIONS = {
         },
       },
       s3b: {
-        tag: 'Dezelfde route in vijf dagen van 9 tot 13 km. Voor een week samen.',
+        tag: 'Dezelfde route in korte dagen van 9 tot 13 km, gerekend met een rustig tempo. Voor een week samen.',
         text: [
           'Dit is dezelfde lijn, geknipt in vijf korte dagen van 4 tot 5,5 uur inclusief pauzes. Elke dag eindigt bij een plaats met meerdere adressen of een Waldrestaurant.',
           'De tweede dag is een lus van 9 km langs de rotsen bij Dahn. Start en eind liggen dicht bij elkaar: je kunt twee nachten op hetzelfde adres blijven en zonder rugzak lopen. De laatste dag is kort en eindigt in Wissembourg.',
@@ -238,9 +238,9 @@ export const SECTIONS = {
 export const NEXT = {
   magazine: 'https://claude.ai/artifact/CG18kKpCq645umtiH6igvx',
   options: [
-    { key: 'B', name: 'Midden: Feldberg, Basel en de Gotthard', text: 'De Westweg uitlopen naar Basel, dan de Via Gottardo naar Ticino en via Milaan naar de Via Francigena. Kortste lijn, geen hutten.' },
-    { key: 'C', name: 'Oost: Bodensee en de E5', text: 'De Querweg naar Konstanz, dan de E5 van hut naar hut over de Alpen naar Meran, Bozen en Verona. Daarna Bologna en Florence.' },
-    { key: 'D', name: 'Dolomieten', text: 'Als C tot Bozen, dan twee weken door de Dolomieten over de Alta Via. Daarna Padua, Bologna en Florence.' },
+    { key: 'B', name: 'Midden: Feldberg, Basel en de Gotthard', text: 'De Westweg uitlopen naar Basel, dan de Via Gottardo naar Ticino en via Milaan naar de Via Francigena. Kortste lijn, geen hutten. Vanaf de Titisee ruwweg 1.280 km in 55 dagen met jouw tempo.' },
+    { key: 'C', name: 'Oost: Bodensee en de E5', text: 'De Querweg naar Konstanz, dan de E5 van hut naar hut over de Alpen naar Meran, Bozen en Verona. Daarna Bologna en Florence. Vanaf de Titisee ruwweg 1.435 km in 65 dagen.' },
+    { key: 'D', name: 'Dolomieten', text: 'Als C tot Bozen, dan ruim een week door de Dolomieten over de Alta Via. Daarna Padua, Bologna en Florence. Vanaf de Titisee ruwweg 1.520 km in 71 dagen.' },
   ],
 };
 

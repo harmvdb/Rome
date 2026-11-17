@@ -37,7 +37,8 @@ export function chosen(sec) {
 // ---------- looptijd ----------
 
 // Bergwandelformule: horizontaal en verticaal apart, de kleinste telt half. Pauzes komen erbij.
-export function timeOf(km, up, down, p = state.settings.pace) {
+export function timeOf(km, up, down, p0) {
+  const p = p0 || state.settings.pace;
   const th = km / p.flat;
   const tv = up / p.up + down / p.down;
   const walk = Math.max(th, tv) + Math.min(th, tv) / 2;
@@ -52,7 +53,7 @@ export function dayWindow(v) {
 }
 
 export function time(st) {
-  const t = timeOf(st.km, st.up, st.down);
+  const t = timeOf(st.km, st.up, st.down, st.variant.pace);
   const w = dayWindow(st.variant);
   const day = w.net ? t.walk : t.total;
   return { walk: t.walk, total: t.total, day, cls: day < w.min - 0.4 ? 'short' : day > w.max + 0.4 ? 'long' : 'ok' };
@@ -97,7 +98,7 @@ function split(plan, v) {
     for (let i = j - 1; i >= 0; i--) {
       if (nodes[j].s - nodes[i].s > 70000 && best[j] < Infinity) break;
       if (best[i] < Infinity) {
-        const t = timeOf((nodes[j].s - nodes[i].s) / 1000, at(plan.up, nodes[j].s) - at(plan.up, nodes[i].s), at(plan.down, nodes[j].s) - at(plan.down, nodes[i].s));
+        const t = timeOf((nodes[j].s - nodes[i].s) / 1000, at(plan.up, nodes[j].s) - at(plan.up, nodes[i].s), at(plan.down, nodes[j].s) - at(plan.down, nodes[i].s), v.pace);
         const T = w.net ? t.walk : t.total;
         let c = ((T - w.ideal) / scale) ** 2 + stopCost(nodes[j]);
         if (T < w.min) c += 1 + 3 * (w.min - T) ** 2;
